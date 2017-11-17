@@ -3,9 +3,13 @@ import groovy.text.SimpleTemplateEngine
 buildscript {
     repositories {
         jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6"
+        classpath "gradle.plugin.edu.sc.seis:macAppBundle:2.1.9"
     }
 }
 
@@ -173,3 +177,14 @@ bintray {
 }
 
 bintrayUpload.dependsOn build, sourcesJar, fatJar
+
+apply plugin: "edu.sc.seis.macAppBundle"
+
+macAppBundle {
+    mainClassName = project.mainClassName
+    icon = 'docs/images/oxygen-mimetypes-text-x-log.icns'
+    bundleJRE = true
+    javaProperties.put("apple.laf.useScreenMenuBar", "true")
+    backgroundImage = "docs/images/lofx-logo.png"
+}
+
