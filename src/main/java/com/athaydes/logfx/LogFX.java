@@ -1,5 +1,9 @@
 package com.athaydes.logfx;
 
+import static com.athaydes.logfx.ui.Dialog.setPrimaryStage;
+import static com.athaydes.logfx.ui.FontPicker.showFontPicker;
+import static com.athaydes.logfx.ui.HighlightOptions.showHighlightOptionsDialog;
+
 import com.athaydes.logfx.binding.BindableValue;
 import com.athaydes.logfx.concurrency.TaskRunner;
 import com.athaydes.logfx.config.Config;
@@ -17,8 +21,16 @@ import com.athaydes.logfx.ui.LogView;
 import com.athaydes.logfx.ui.LogViewPane;
 import com.athaydes.logfx.ui.MustCallOnJavaFXThread;
 import com.athaydes.logfx.ui.StartUpView;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.ObservableSet;
 import javafx.scene.Scene;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Menu;
@@ -36,18 +48,6 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static com.athaydes.logfx.ui.Dialog.setPrimaryStage;
-import static com.athaydes.logfx.ui.FontPicker.showFontPicker;
-import static com.athaydes.logfx.ui.HighlightOptions.showHighlightOptionsDialog;
 
 /**
  * The LogFX JavaFX Application.
@@ -84,8 +84,6 @@ public class LogFX extends Application {
                 config.getObservableFiles().isEmpty() );
 
         logsPane.orientationProperty().bindBidirectional( config.panesOrientationProperty() );
-
-        openFilesFromConfig();
     }
 
     @Override
@@ -123,6 +121,8 @@ public class LogFX extends Application {
             taskRunner.shutdown();
         } );
 
+        openFilesFromConfig();
+        
         Platform.runLater( () -> {
             log.debug( "Setting divider positions to {}", config.getPaneDividerPositions() );
             logsPane.setDividerPositions( config.getPaneDividerPositions() );
@@ -186,8 +186,19 @@ public class LogFX extends Application {
     }
 
     private void openFilesFromConfig() {
-        for ( File file : config.getObservableFiles() ) {
-            Platform.runLater( () -> openViewFor( file, -1 ) );
+        List<String> cmdFiles = getParameters().getUnnamed();
+        ObservableSet<File> observableFiles = config.getObservableFiles();
+        if (cmdFiles.isEmpty()) {
+            for ( File file : observableFiles) {
+                Platform.runLater( () -> openViewFor( file, -1 ) );
+            }
+        } else {
+            observableFiles.clear();
+            for (String cmdFile : cmdFiles) {
+                File file = new File(cmdFile);
+                observableFiles.add(file);
+                Platform.runLater( () -> openViewFor( file, -1 ) );
+            }
         }
     }
 
@@ -297,7 +308,7 @@ public class LogFX extends Application {
         }
 
         Font.loadFont( LogFX.class.getResource( "/fonts/fontawesome-webfont.ttf" ).toExternalForm(), 12 );
-        Application.launch( LogFX.class );
+        Application.launch( LogFX.class, args );
     }
 
 }
